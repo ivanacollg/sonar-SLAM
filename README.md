@@ -38,9 +38,10 @@ pyyaml
 
 # ROS Dependencies
 ```
-ROS-noetic
-catkin-pybind11
+ROS-noetic-desktop-full
 catkin-tools
+navcore
+pybind11-catkin
 ```
 
 # Installation
