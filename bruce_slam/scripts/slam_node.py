@@ -1,4 +1,5 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+
 import rospy
 import numpy as np
 from bruce_slam.utils.io import *
@@ -57,7 +58,7 @@ def offline(args)->None:
             dead_reckoning_node.dvl_sub.callback(msg)
         elif topic == DEPTH_TOPIC:
             dead_reckoning_node.depth_sub.callback(msg)
-        elif topic == SONAR_TOPIC:
+        elif topic == SONAR_TOPIC or topic == SONAR_TOPIC_UNCOMPRESSED:
             feature_extraction_node.sonar_sub.callback(msg)
 
         if topic == SONAR_TOPIC:
