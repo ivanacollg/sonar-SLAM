@@ -51,7 +51,7 @@ def offline(args)->None:
             dead_reckoning_node.dvl_sub.callback(msg)
         elif topic == DEPTH_TOPIC:
             dead_reckoning_node.depth_sub.callback(msg)
-        elif topic == SONAR_TOPIC or SONAR_TOPIC_UNCOMPRESSED:
+        elif topic == SONAR_TOPIC or topic == SONAR_TOPIC_UNCOMPRESSED:
             feature_extraction_node.sonar_sub.callback(msg)
         elif topic == GYRO_TOPIC:
             gyro_node.gyro_sub.callback(msg)
