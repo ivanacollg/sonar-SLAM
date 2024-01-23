@@ -35,7 +35,7 @@ from sonar_oculus.msg import OculusPing, OculusPingUncompressed
 physical_devices = tf.config.list_physical_devices('GPU') 
 tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
-model = keras.models.load_model("/home/jake/Desktop/open_source/src/sonar-SLAM/bruce_slam/models/real_data_model.h5")
+model = keras.models.load_model("/home/ivana/code/ros_bags/real_data_model.h5")
 model.make_predict_function()
 
 class keyframe():
@@ -906,7 +906,7 @@ class BaysianMappingNode():
                 transforms.append(gtsam.Pose3(gtsam.Rot3(frame.rot),gtsam.Point3(frame.pose[0], frame.pose[1], frame.pose[2])))
 
         file_name = str(int(self.keyframe_translation)) + "_" + str(int(np.round(np.degrees(self.keyframe_rotation))))
-        path = "/home/jake/Desktop/open_source/src/sonar-SLAM/bruce_slam/notebooks/data_logs/" 
+        path = "/home/ivana/code/ros_bags/logs/" 
         path += self.scene + "/"
 
         with open(path + 'poses3D_'+file_name+'.pickle', 'wb') as handle:

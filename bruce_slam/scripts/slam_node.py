@@ -40,7 +40,7 @@ def offline(args)->None:
     bayes_mapping_node.scene = args.scene 
     bayes_mapping_node.keyframe_translation = args.translation
     bayes_mapping_node.keyframe_rotation = np.radians(args.rotation)
-    #bayes_mapping_node.vis_3D = False
+    bayes_mapping_node.vis_3D = True
     clock_pub = rospy.Publisher("/clock", Clock, queue_size=100)
 
     # loop over the entire rosbag

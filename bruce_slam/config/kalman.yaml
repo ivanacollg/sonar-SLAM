@@ -3,7 +3,7 @@
 
 
 # IMU driver : 1 is the heavy and 2 is heavy MKII
-imu_version: 1
+imu_version: 2
 
 # Define the roll offset, based on the config of the IMU
 # USMMA/SLB data: 180
