@@ -19,6 +19,8 @@ if __name__ == "__main__":
     #log and spin
     if not args.file:
         loginfo("Start online sonar feature extraction...")
+        while not rospy.is_shutdown():
+            node.extract_features()
         rospy.spin()
     else:
         loginfo("Start offline sonar feature extraction...")
