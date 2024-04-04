@@ -1,7 +1,7 @@
 # how often to add keyframes, this can be varied but between 1 and 4 meters is best
 keyframe_duration: 1.0
-keyframe_translation: 3.0
-keyframe_rotation: deg(30)
+keyframe_translation: 1.0
+keyframe_rotation: deg(15)
 
 # define the noise models
 # x, y, theta in m, m, rad

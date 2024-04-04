@@ -108,6 +108,7 @@ class DeadReckoningNode(object):
 			imu_msg (Imu): the message from VN100
 			dvl_msg (DVL): the message from the DVL
 		"""
+
 		#get the previous depth message
 		depth_msg = self.depth_cache.getLast()
 		#if there is no depth message, then skip this time step
@@ -172,7 +173,7 @@ class DeadReckoningNode(object):
 
 
 		# Get a rotation matrix
-		rot = gtsam.Rot3.Ypr(gyro_yaw, rot.pitch(), rot.roll())
+		rot = gtsam.Rot3.Ypr(gyro_yaw, rot.pitch(), np.radians(90)+rot.roll())
 
 		#parse the DVL message into an array of velocites
 		vel = np.array([dvl_msg.velocity.x, dvl_msg.velocity.y, dvl_msg.velocity.z])
@@ -279,7 +280,7 @@ class DeadReckoningNode(object):
 
 		header = rospy.Header()
 		header.stamp = self.prev_time
-		header.frame_id = "odom"
+		header.frame_id = "map"
 
 		odom_msg = Odometry()
 		odom_msg.header = header
@@ -288,15 +289,15 @@ class DeadReckoningNode(object):
 		# twist in local frame
 		odom_msg.child_frame_id = "base_link"
 		# Local planer behaves worse
-		# odom_msg.twist.twist.linear.x = self.prev_vel[0]
-		# odom_msg.twist.twist.linear.y = self.prev_vel[1]
-		# odom_msg.twist.twist.linear.z = self.prev_vel[2]
-		# odom_msg.twist.twist.angular.x = self.prev_omega[0]
-		# odom_msg.twist.twist.angular.y = self.prev_omega[1]
-		# odom_msg.twist.twist.angular.z = self.prev_omega[2]
-		odom_msg.twist.twist.linear.x = 0
-		odom_msg.twist.twist.linear.y = 0
-		odom_msg.twist.twist.linear.z = 0
+		odom_msg.twist.twist.linear.x = self.prev_vel[0]
+		odom_msg.twist.twist.linear.y = self.prev_vel[1]
+		odom_msg.twist.twist.linear.z = self.prev_vel[2]
+		#odom_msg.twist.twist.angular.x = self.prev_omega[0]
+		#odom_msg.twist.twist.angular.y = self.prev_omega[1]
+		#odom_msg.twist.twist.angular.z = self.prev_omega[2]
+		#odom_msg.twist.twist.linear.x = 0
+		#odom_msg.twist.twist.linear.y = 0
+		#odom_msg.twist.twist.linear.z = 0
 		odom_msg.twist.twist.angular.x = 0
 		odom_msg.twist.twist.angular.y = 0
 		odom_msg.twist.twist.angular.z = 0
@@ -305,7 +306,7 @@ class DeadReckoningNode(object):
 		p = odom_msg.pose.pose.position
 		q = odom_msg.pose.pose.orientation
 		self.tf.sendTransform(
-			(p.x, p.y, p.z), (q.x, q.y, q.z, q.w), header.stamp, "base_link", "odom"
+			(p.x, p.y, p.z), (q.x, q.y, q.z, q.w), header.stamp, "base_link", "map"
 		)
 		if publish_traj:
 			traj = np.array([g2n(pose) for _, pose in self.keyframes])

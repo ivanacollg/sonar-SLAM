@@ -244,15 +244,16 @@ class SLAMNode(SLAM):
         pose_msg.pose.covariance = cov.ravel().tolist()
         self.pose_pub.publish(pose_msg)
 
-        o2m = self.current_frame.pose3.compose(self.current_frame.dr_pose3.inverse())
-        o2m = g2r(o2m)
+        #o2m = self.current_frame.pose3.compose(self.current_frame.dr_pose3.inverse())
+        #o2m = g2r(o2m)
+        o2m = g2r(self.current_frame.pose3)
         p = o2m.position
         q = o2m.orientation
         self.tf.sendTransform(
             (p.x, p.y, p.z),
             [q.x, q.y, q.z, q.w],
             self.current_frame.time,
-            "odom",
+            "slam_link",
             "map",
         )
 
@@ -260,7 +261,7 @@ class SLAMNode(SLAM):
         odom_msg.header = pose_msg.header
         odom_msg.pose.pose = pose_msg.pose.pose
         if self.rov_id == "":
-            odom_msg.child_frame_id = "base_link"
+            odom_msg.child_frame_id = "slam_link"
         else:
             odom_msg.child_frame_id = self.rov_id + "_base_link"
         odom_msg.twist.twist = self.current_frame.twist
