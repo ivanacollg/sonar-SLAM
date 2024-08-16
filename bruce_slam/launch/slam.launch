@@ -5,7 +5,7 @@
     <param name="/use_sim_time" value="true"/>
 
     <!-- offline mode -->
-    <arg name="file" default=""/>
+    <arg name="file" default=""/><!--"/home/ivana/code/rov_data/Jun10-USMMA/2024-06-11-08-32-04.bag"/-->
     <arg name="start" default="0.0"/>
     <arg name="duration" default="-1"/>
     <arg name="kill" default="false"/>
@@ -49,6 +49,11 @@
                 <rosparam command="load" file="$(find bruce_slam)/config/feature.yaml" subst_value="true"/>
             </node>
 
+            <!-- start the feature extraction vertical node -->
+            <node pkg="bruce_slam" name="feature_extraction_vertical" type="feature_extraction_vertical_node.py" output="screen">
+                <rosparam command="load" file="$(find bruce_slam)/config/feature.yaml" subst_value="true"/>
+            </node>
+
             <!-- start the SLAM node -->
             <node pkg="bruce_slam" name="slam" type="slam_node.py" output="screen">
                 <rosparam command="load" file="$(find bruce_slam)/config/slam.yaml" subst_value="true"/>
@@ -58,7 +63,7 @@
 
         </group>
        
-        <!--node pkg="tf" name="map_to_world_tf_publisher" type="static_transform_publisher" args="0 0 0 0 0 3.14159 world map 100"/-->
+        <node pkg="tf" name="map_to_world_tf_publisher" type="static_transform_publisher" args="0 0 0 0 0 0 world map 100"/>
     </group>
 
     <!--node if="$(arg rviz)" type="rviz" name="rviz" pkg="rviz" args="-d $(find bruce_slam)/rviz/video.rviz" /-->
