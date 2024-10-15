@@ -646,21 +646,25 @@ class SLAM(object):
         # Only continue with this if it is enabled in slam.yaml
         if self.ssm_params.enable == False:
             ret.status = STATUS.NOT_ENOUGH_POINTS
+            loginfo("ssm disabled")
             ret.status.description = "source points {}".format(len(ret.source_points))
             return ret
 
         # check the source points for a minimum count
         if len(ret.source_points) < self.ssm_params.min_points:
             ret.status = STATUS.NOT_ENOUGH_POINTS
+            loginfo("not enough source points" + str(len(ret.source_points)))
             ret.status.description = "source points {}".format(len(ret.source_points))
             return ret
 
         # check the target points for a minimum count
         if len(ret.target_points) < self.ssm_params.min_points:
             ret.status = STATUS.NOT_ENOUGH_POINTS
+            loginfo("not enough target points" + str(len(ret.target_points)))
             ret.status.description = "target points {}".format(len(ret.target_points))
             return ret
 
+        loginfo("SSM initialized")
         # check if we have initialized the ICP params
         if not self.ssm_params.initialization:
             return ret
@@ -711,6 +715,7 @@ class SLAM(object):
                 ret.save("step-{}-ssm-sampling.npz".format(self.current_key))
         else:
             ret.status = STATUS.INITIALIZATION_FAILURE
+            loginfo("Initilization failure")
             ret.status.description = result.message
 
         return ret
@@ -724,6 +729,7 @@ class SLAM(object):
             keyframe (Keyframe): The keyframe we are evaluating, this contains all the relevant info.
         """
 
+        loginfo("SSM")
         # call the global-ICP
         ret = self.initialize_sequential_scan_matching(keyframe)
 
@@ -734,12 +740,13 @@ class SLAM(object):
         # check the status of the global-ICP call, if the result is a failure.
         # simply add the odometry factor and return
         if not ret.status:
+            loginfo("only adding odom")
             self.add_odometry(keyframe)
             return
 
         # copy the global-ICP into an ICPResult
         ret2 = ICPResult(ret, self.ssm_params.cov_samples > 0)
-
+        loginfo("SSM2")
         # Compute ICP here with a timer
         with CodeTimer("SLAM - sequential scan matching - ICP"):
 
@@ -777,6 +784,7 @@ class SLAM(object):
                 else:
                     ret2.estimated_transform = odom
                     ret2.status.description = ""
+        loginfo("SSM3")
 
         # The transformation compared to dead reckoning can't be too large
         if ret2.status:
@@ -797,6 +805,8 @@ class SLAM(object):
             overlap = self.get_overlap(
                 ret2.source_points, ret2.target_points, ret2.estimated_transform
             )
+            #print("SSM overlap {}".format(overlap))
+            loginfo("SSM overlap {}".format(overlap))
             if overlap < self.ssm_params.min_points:
                 ret2.status = STATUS.NOT_ENOUGH_OVERLAP
             ret2.status.description = "overlap {}".format(overlap)
@@ -843,7 +853,7 @@ class SLAM(object):
         Returns:
             InitializationResult: The global-ICP outcome
         """
-
+        loginfo("NSSM")
         # instanciate an object to capute the results
         ret = InitializationResult()
         ret.status = STATUS.SUCCESS
@@ -861,6 +871,7 @@ class SLAM(object):
 
         # gate loop closure search to those who have sufficent points
         if len(ret.source_points) < self.nssm_params.min_points:
+            loginfo("NSS not enough source points" + str(len(ret.source_points)))
             ret.status = STATUS.NOT_ENOUGH_POINTS
             ret.status.description = "source points {}".format(len(ret.source_points))
             return ret
@@ -906,6 +917,7 @@ class SLAM(object):
         # check the aggragate cloud for num of points
         if len(target_frames) == 0 or len(target_points) < self.nssm_params.min_points:
             ret.status = STATUS.NOT_ENOUGH_POINTS
+            loginfo("NSS not enough target points" + str(len(ret.target_points)))
             ret.status.description = "target points {}".format(len(target_points))
             return ret
 
@@ -919,10 +931,11 @@ class SLAM(object):
         )
         ret.cov = self.keyframes[ret.source_key].cov
 
+        loginfo("NSSM initialized")
         # check if we have the params for global ICP
         if not self.nssm_params.initialization:
             return ret
-
+        loginfo("NSSM initialized")
         with CodeTimer("SLAM - nonsequential scan matching - sampling"):
 
             # set bounds for global ICP
@@ -964,6 +977,7 @@ class SLAM(object):
         if not result.success:
             ret.status = STATUS.INITIALIZATION_FAILURE
             ret.status.description = result.message
+            loginfo("NSSM init failed")
             return ret
 
         # parse the result
@@ -984,6 +998,7 @@ class SLAM(object):
             np.int32(target_keys[indices[indices != -1]]), return_counts=True
         )
         if len(counts1) == 0:
+            loginfo("NSS No overlap")
             ret.status = STATUS.NOT_ENOUGH_OVERLAP
             ret.status.description = "0"
             return ret
@@ -1017,6 +1032,7 @@ class SLAM(object):
 
         # if the global ICP call did not work, return
         if not ret.status:
+            loginfo("NSSM global ICP Failed")
             return
 
         # package the global ICP call result
@@ -1038,6 +1054,7 @@ class SLAM(object):
                 # check the status
                 if message != "success":
                     ret2.status = STATUS.NOT_CONVERGED
+                    loginfo("NSSM ICP with covariance failed")
                     ret2.status.description = message
                 else:
                     ret2.estimated_transform = odom
@@ -1055,6 +1072,7 @@ class SLAM(object):
 
                 # check status
                 if message != "success":
+                    loginfo("NSSM ICP failed")
                     ret2.status = STATUS.NOT_CONVERGED
                     ret2.status.description = message
                 else:
@@ -1072,9 +1090,11 @@ class SLAM(object):
                 or delta_rotation > self.nssm_params.max_rotation
             ):
                 ret2.status = STATUS.LARGE_TRANSFORMATION
+                loginfo("NSS transformation too large, translation" + str(delta_translation) + " rotation " + str(delta_rotation))
                 ret2.status.description = "trans {:.2f} rot {:.2f}".format(
                     delta_translation, delta_rotation
                 )
+            loginfo("NSS translation" + str(delta_translation) + " rotation " + str(delta_rotation))
 
         # There must be enough overlap between two point clouds.
         if ret2.status:
@@ -1082,7 +1102,9 @@ class SLAM(object):
                 ret2.source_points, ret2.target_points[:, :2], ret2.estimated_transform
             )
             if overlap < self.nssm_params.min_points:
+                loginfo("NSS not enough overlap" + str(overlap))
                 ret2.status = STATUS.NOT_ENOUGH_OVERLAP
+            loginfo("NSS overlap" + str(overlap))
             ret2.status.description = str(overlap)
             
         # apply geometric verification, in this case PCM
@@ -1127,6 +1149,7 @@ class SLAM(object):
                     self.keyframes[ret2.source_key].constraints.append(
                         (ret2.target_key, ret2.estimated_transform)
                     )
+                    loginfo("New loop closure")
                     ret2.inserted = True  # update the status of this loop closure, don't add a loop twice
 
         return ret2

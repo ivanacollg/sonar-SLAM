@@ -53,6 +53,7 @@ def offline(args)->None:
             dead_reckoning_node.depth_sub.callback(msg)
         elif topic == SONAR_TOPIC or topic == SONAR_TOPIC_UNCOMPRESSED:
             feature_extraction_node.sonar_sub.callback(msg)
+            feature_extraction_node.extract_features()
         elif topic == GYRO_TOPIC:
             gyro_node.gyro_sub.callback(msg)
 
@@ -62,7 +63,8 @@ def offline(args)->None:
             clock_pub.publish(Clock(msg.header.stamp))
 
             # Publish map to world so we can visualize all in a z-down frame in rviz.
-            node.tf.sendTransform((0, 0, 0), [1, 0, 0, 0], msg.header.stamp, "map", "world")
+            # node.tf.sendTransform((0, 0, 0), [1, 0, 0, 0], msg.header.stamp, "map", "odom")
+        #rospy.sleep(0.1)
     
 
 if __name__ == "__main__":

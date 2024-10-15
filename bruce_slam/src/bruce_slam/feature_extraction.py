@@ -75,6 +75,7 @@ class FeatureExtraction(object):
         # place holder for the multi-robot system
         self.rov_id = ""
         self.current_msg = None
+        self.feature_mode = "scan"
 
     def configure(self):
         '''Calls the CFAR class constructor for the featureExtraction class
@@ -180,7 +181,8 @@ class FeatureExtraction(object):
         '''
 
         #shift the axis
-        points = np.c_[points[:,0],np.zeros(len(points)),  points[:,1]]
+        #points = np.c_[points[:,0],np.zeros(len(points)),  points[:,1]] # Without Kalman filter
+        points = np.c_[points[:,0],  points[:,1], np.zeros(len(points))] # With Kalman filter
 
         #convert to a pointcloud
         feature_msg = n2r(points, "PointCloudXYZ")
@@ -221,18 +223,38 @@ class FeatureExtraction(object):
             peaks = self.detector.detect(img, self.alg)
             peaks &= img > self.threshold
 
-            vis_img = cv2.remap(img, self.map_x, self.map_y, cv2.INTER_LINEAR)
-            vis_img = cv2.applyColorMap(vis_img, 2)
-            self.feature_img_pub.publish(ros_numpy.image.numpy_to_image(vis_img, "bgr8"))
+            # extract a line scan for the peaks image, only the closest return in each beam
+            if self.feature_mode == "scan":
+                line_scan = self.extract_line_scan(peaks)
 
-            #convert to cartisian
-            peaks = cv2.remap(peaks, self.map_x, self.map_y, cv2.INTER_LINEAR)        
-            locs = np.c_[np.nonzero(peaks)]
+                # create a vis image 
+                vis_img = cv2.applyColorMap(img, 2)
+                blank_img = cv2.applyColorMap(img, 2)
+                for point in np.c_[np.nonzero(line_scan)]:
+                    cv2.circle(vis_img,(point[1],point[0]),3,(0,0,255),-1)
+                vis_img = cv2.remap(vis_img, self.map_x, self.map_y, cv2.INTER_LINEAR)
+                blank_img = cv2.remap(blank_img, self.map_x, self.map_y, cv2.INTER_LINEAR)
+                vis_img = np.column_stack((np.flip(blank_img,1),np.flip(vis_img,1)))
+                self.feature_img_pub.publish(ros_numpy.image.numpy_to_image(vis_img, "bgr8"))
+
+                # extract the line scan
+                line_scan = cv2.remap(line_scan, self.map_x, self.map_y, cv2.INTER_LINEAR)        
+                locs = np.c_[np.nonzero(line_scan)]
+
+            else:
+
+                vis_img = cv2.remap(img, self.map_x, self.map_y, cv2.INTER_LINEAR)
+                vis_img = cv2.applyColorMap(vis_img, 2)
+                self.feature_img_pub.publish(ros_numpy.image.numpy_to_image(vis_img, "bgr8"))
+
+                #convert to cartisian
+                peaks = cv2.remap(peaks, self.map_x, self.map_y, cv2.INTER_LINEAR)        
+                locs = np.c_[np.nonzero(peaks)]
 
             #convert from image coords to meters
             x = locs[:,1] - self.cols / 2.
             x = (-1 * ((x / float(self.cols / 2.)) * (self.width / 2.))) #+ self.width
-            y = (-1*(locs[:,0] / float(self.rows)) * self.height) + self.height
+            y = (-1*(locs[:,0] / float(self.rows)) * self.height) + self.height +0.3
             points = np.column_stack((y,x))
 
             #filter the cloud using PCL
@@ -248,6 +270,25 @@ class FeatureExtraction(object):
 
             #publish the feature message
             self.publish_features(sonar_msg, points)
+
+    def extract_line_scan(self,peaks: np.array) -> np.array:
+        """Get a linescan from a downward looking sonar
+
+        Args:
+            peaks (np.array): the cfar image in
+
+        Returns:
+            np.array: the line scan image
+        """
+
+        # extract the first contact in each column 
+        peaks_rot = np.rot90(peaks) # rotate the peaks to we can work with columns 
+        blank = np.zeros_like(peaks_rot) # make a blank image copy
+        for i,col in enumerate(peaks_rot): # loop
+            j = np.argmax(col)
+            if peaks_rot[i][j] != 0:
+                blank[i][j] = 255
+        return np.rot90(blank,3)
     
     
     #@add_lock
