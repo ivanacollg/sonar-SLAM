@@ -82,7 +82,7 @@ class DeadReckoningNode(object):
 
 		# Use point cloud for visualization
 		self.traj_pub = rospy.Publisher(
-			"traj_dead_reck", PointCloud2, queue_size=10)
+			LOCALIZATION_TRAJ_TOPIC, PointCloud2, queue_size=10)
 
 		self.odom_pub = rospy.Publisher(
 			LOCALIZATION_ODOM_TOPIC, Odometry, queue_size=10)

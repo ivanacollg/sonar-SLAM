@@ -94,6 +94,7 @@ class MappingNode(Mapping):
             traj = r2n(traj_msg)
             pose = pose322(n2g(traj[-1, :6], "Pose3"))
             points = r2n(feature_msg)
+            points = np.c_[points[:,0],  -points[:,1], np.zeros(len(points))] 
             self.add_keyframe(len(traj) - 1, pose, ping, points)
 
         with CodeTimer("Mapping - update keyframe"):
